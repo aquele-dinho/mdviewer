@@ -1,0 +1,51 @@
+# Binaries for programs and plugins
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+mdviewer
+mdviewer-*
+
+# Test binary, built with `go test -c`
+*.test
+
+# Output of the go coverage tool
+*.out
+
+# Build artifacts
+dist/
+build/
+
+# Dependency directories
+vendor/
+
+# Go workspace file
+go.work
+
+# IDEs
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Test files
+test_chromedp.go
+test_mermaid_render.go
+
+# Generated diagram files
+diagram-*.svg
+diagram-*.png
+
+# Test/output files
+output.pdf
+test-output.pdf
+
+# Temporary files
+*.log
+*.tmp

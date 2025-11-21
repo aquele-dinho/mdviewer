@@ -1,0 +1,82 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    name: Build and Release
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.21'
+
+      - name: Get version
+        id: version
+        run: echo "VERSION=${GITHUB_REF#refs/tags/v}" >> $GITHUB_OUTPUT
+
+      - name: Build binaries
+        run: |
+          # macOS Intel
+          GOOS=darwin GOARCH=amd64 go build -ldflags="-s -w" -o dist/mdviewer-darwin-amd64 ./cmd/mdviewer
+          
+          # macOS Apple Silicon
+          GOOS=darwin GOARCH=arm64 go build -ldflags="-s -w" -o dist/mdviewer-darwin-arm64 ./cmd/mdviewer
+          
+          # Linux AMD64
+          GOOS=linux GOARCH=amd64 go build -ldflags="-s -w" -o dist/mdviewer-linux-amd64 ./cmd/mdviewer
+          
+          # Linux ARM64
+          GOOS=linux GOARCH=arm64 go build -ldflags="-s -w" -o dist/mdviewer-linux-arm64 ./cmd/mdviewer
+          
+          # Windows AMD64
+          GOOS=windows GOARCH=amd64 go build -ldflags="-s -w" -o dist/mdviewer-windows-amd64.exe ./cmd/mdviewer
+
+      - name: Create checksums
+        run: |
+          cd dist
+          sha256sum * > checksums.txt
+          cat checksums.txt
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: |
+            dist/mdviewer-darwin-amd64
+            dist/mdviewer-darwin-arm64
+            dist/mdviewer-linux-amd64
+            dist/mdviewer-linux-arm64
+            dist/mdviewer-windows-amd64.exe
+            dist/checksums.txt
+          draft: false
+          prerelease: false
+          generate_release_notes: true
+          body: |
+            ## Installation
+
+            Download the binary for your platform and run it!
+
+            **Requirements:**
+            - Chrome, Chromium, or Edge must be installed for local Mermaid diagram rendering
+            - Without Chrome, URL mode will be used as fallback
+
+            ## Quick Start
+            ```bash
+            # macOS/Linux: make executable
+            chmod +x mdviewer-*
+            
+            # View a markdown file
+            ./mdviewer README.md
+            ```
+
+            See README.md for full documentation.
