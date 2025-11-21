@@ -64,13 +64,14 @@ mdviewer document.md --width 100
 mdviewer document.md --no-mermaid
 
 # Mermaid rendering modes
-mdviewer document.md --mermaid-mode=terminal  # Default: ASCII preview + SVG export
-mdviewer document.md --mermaid-mode=svg       # Export SVGs only
-mdviewer document.md --mermaid-mode=png       # Export PNGs only
+mdviewer document.md --mermaid-mode=terminal  # Default: Memory-only (inline or ASCII preview)
+mdviewer document.md --mermaid-mode=svg       # Export SVGs to temp directory
+mdviewer document.md --mermaid-mode=png       # Export PNGs to temp directory
 mdviewer document.md --mermaid-mode=url       # Show URLs + code (no local rendering)
 
-# Custom SVG output directory
-mdviewer document.md --mermaid-output-dir=./diagrams
+# Save Mermaid diagrams to disk (terminal mode only)
+mdviewer document.md --keep-mermaid-files     # Saves SVG files to temp directory
+mdviewer document.md -k --mermaid-output-dir=./diagrams  # Save to custom directory
 
 # Export to PDF
 mdviewer document.md --export-pdf output.pdf
@@ -111,7 +112,7 @@ graph TD
 ### Rendering Modes
 
 #### Terminal Mode (Default)
-Displays diagrams inline (if your terminal supports it) or as an ASCII preview box, and saves SVG files:
+Displays diagrams inline (if your terminal supports it) or as an ASCII preview box. **Files are kept in memory by default** - no disk files are created unless you use `--keep-mermaid-files`:
 
 **Inline Image Support** (auto-detected):
 - ✅ **Warp Terminal** (iTerm2 protocol)
@@ -125,7 +126,6 @@ If your terminal supports inline images, diagrams will render directly in the ou
 ```
 📊 Mermaid Diagram (Flowchart):
 [actual rendered image appears here]
-  💾 Saved to: diagram-1.svg
 ```
 
 Otherwise, you'll see an ASCII info box:
@@ -135,19 +135,35 @@ Otherwise, you'll see an ASCII info box:
 │ 📐 Dimensions: 232x334 px                        │
 │ ✅ Rendered locally                              │
 └──────────────────────────────────────────────────┘
-  💾 Saved to: diagram-1.svg
+```
+
+**To save diagrams to disk**, use the `--keep-mermaid-files` flag:
+```bash
+mdviewer doc.md --keep-mermaid-files
+# Files saved to system temp directory by default
+
+mdviewer doc.md -k --mermaid-output-dir=./my-diagrams
+# Files saved to custom directory
 ```
 
 #### SVG Mode
-Only exports SVG files (no terminal preview):
+Exports SVG files to disk (no terminal preview):
 ```bash
+mdviewer doc.md --mermaid-mode=svg
+# Files saved to system temp directory
+
 mdviewer doc.md --mermaid-mode=svg --mermaid-output-dir=./diagrams
+# Files saved to custom directory
 ```
 
 #### PNG Mode
-Exports diagrams as PNG images:
+Exports diagrams as PNG images to disk:
 ```bash
+mdviewer doc.md --mermaid-mode=png
+# Files saved to system temp directory
+
 mdviewer doc.md --mermaid-mode=png --mermaid-output-dir=./diagrams
+# Files saved to custom directory
 ```
 
 #### URL Mode (Fallback)
