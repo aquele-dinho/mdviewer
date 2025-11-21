@@ -44,6 +44,43 @@ To download and install:
 6. On Unix-like systems, make the binary executable if needed: `chmod +x mdviewer-*`.
 7. Run `./mdviewer --help` or `./mdviewer --version` to verify it works.
 
+### Make `mdviewer` available system-wide
+
+#### macOS & Linux
+
+1. Move the binary into a directory on your `PATH` (for example `/usr/local/bin` or `~/.local/bin`):
+   ```bash
+   sudo mv mdviewer-* /usr/local/bin/mdviewer
+   # or, without sudo if you use ~/.local/bin
+   mkdir -p ~/.local/bin
+   mv mdviewer-* ~/.local/bin/mdviewer
+   ```
+2. Ensure the directory is on your `PATH` (for `~/.local/bin`, add this to your shell config like `~/.zshrc` or `~/.bashrc`):
+   ```bash
+   export PATH="$HOME/.local/bin:$PATH"
+   ```
+3. Restart your shell or source your config file, then run:
+   ```bash
+   mdviewer --version
+   ```
+
+#### Windows (PowerShell)
+
+1. Extract `mdviewer-windows-amd64.zip` and rename the binary if you like (for example `mdviewer.exe`).
+2. Move it into a directory on your `PATH` (for example `C:\\Users\\<you>\\bin`):
+   ```powershell
+   New-Item -ItemType Directory -Force "$env:USERPROFILE\bin" | Out-Null
+   Move-Item ".\mdviewer-windows-amd64.exe" "$env:USERPROFILE\bin\mdviewer.exe"
+   ```
+3. Add that directory to your user `PATH` (Windows Settings → System → About → Advanced system settings → Environment Variables), or from PowerShell:
+   ```powershell
+   [Environment]::SetEnvironmentVariable("Path", $env:Path + ";$env:USERPROFILE\bin", "User")
+   ```
+4. Open a new terminal and run:
+   ```powershell
+   mdviewer --version
+   ```
+
 ### From Source
 
 ```bash
