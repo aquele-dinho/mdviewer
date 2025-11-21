@@ -27,6 +27,7 @@ jobs:
 
       - name: Build binaries
         run: |
+          mkdir -p dist
           # macOS Intel
           GOOS=darwin GOARCH=amd64 go build -ldflags="-s -w" -o dist/mdviewer-darwin-amd64 ./cmd/mdviewer
           
