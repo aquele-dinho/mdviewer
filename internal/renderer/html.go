@@ -3,7 +3,9 @@ package renderer
 import (
 	"bytes"
 	"fmt"
+	"regexp"
 
+	"github.com/aquele_dinho/mdviewer/internal/mermaid"
 	"github.com/yuin/goldmark"
 	"github.com/yuin/goldmark/extension"
 	"github.com/yuin/goldmark/parser"
@@ -28,6 +30,9 @@ func NewHTMLRenderer() *HTMLRenderer {
 		goldmark.WithRendererOptions(
 			html.WithHardWraps(),
 			html.WithXHTML(),
+			// Allow raw HTML from markdown, including embedded Mermaid SVGs.
+			// This is intended for local markdown/PDF workflows; be cautious with untrusted input.
+			html.WithUnsafe(),
 		),
 	)
 
@@ -38,9 +43,12 @@ func NewHTMLRenderer() *HTMLRenderer {
 
 // RenderToHTML converts markdown content to HTML
 func (r *HTMLRenderer) RenderToHTML(markdown string) (string, error) {
+	// First, process mermaid diagrams and replace with rendered SVGs
+	processed := r.processMermaidDiagrams(markdown)
+
 	var buf bytes.Buffer
 	
-	if err := r.md.Convert([]byte(markdown), &buf); err != nil {
+	if err := r.md.Convert([]byte(processed), &buf); err != nil {
 		return "", fmt.Errorf("failed to convert markdown to HTML: %w", err)
 	}
 
@@ -122,13 +130,64 @@ func (r *HTMLRenderer) wrapHTML(content string) string {
             color: #0366d6;
             text-decoration: none;
         }
-        a:hover {
-            text-decoration: underline;
-        }
-    </style>
-</head>
-<body>
-%s
-</body>
-</html>`, content)
+			a:hover {
+				text-decoration: underline;
+			}
+			.mermaid-diagram {
+				margin: 20px 0;
+				text-align: center;
+			}
+		</style>
+	</head>
+	<body>
+	%s
+	</body>
+	</html>`, content)
+}
+
+// processMermaidDiagrams detects mermaid code blocks and replaces them with rendered SVGs.
+// On any failure (e.g., compiler creation or render errors), it falls back to the
+// original markdown so diagrams remain as code fences.
+func (r *HTMLRenderer) processMermaidDiagrams(markdown string) string {
+	// Detect mermaid blocks
+	mermaidBlocks := DetectMermaidBlocks(markdown)
+	if len(mermaidBlocks) == 0 {
+		return markdown
+	}
+
+	// Create mermaid compiler. If this fails (for example, when headless Chrome
+	// is not available), we intentionally fall back to showing the original
+	// mermaid code blocks instead of failing the whole render.
+	compiler, err := mermaid.NewCompiler()
+	if err != nil {
+		return markdown
+	}
+	defer compiler.Close()
+
+	// Process markdown by replacing mermaid blocks with rendered SVGs
+	result := markdown
+	
+	// Process blocks in reverse order to maintain string indices
+	for i := len(mermaidBlocks) - 1; i >= 0; i-- {
+		block := mermaidBlocks[i]
+		
+		// Render diagram to SVG
+		svgResult, err := compiler.Render(block.Content)
+		if err != nil || svgResult.Error != nil {
+			// If rendering fails, keep the code block
+			continue
+		}
+		
+		// Create HTML with embedded SVG
+		svgHTML := fmt.Sprintf(`<div class="mermaid-diagram">%s</div>`, svgResult.SVG)
+		
+		// Find the mermaid code block in the markdown
+		// Pattern: ```mermaid\n...content...\n```
+		pattern := regexp.MustCompile("(?s)```mermaid\\s*\\n" + regexp.QuoteMeta(block.Content) + "\\n```")
+		
+		// Replace the mermaid code block with the SVG
+		result = pattern.ReplaceAllString(result, svgHTML)
+	}
+
+	return result
 }

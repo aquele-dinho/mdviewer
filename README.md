@@ -100,6 +100,8 @@ mdviewer --version
 
 mdviewer now renders Mermaid diagrams **locally** using headless Chrome (chromedp). No internet connection required!
 
+> Security note: for PDF export and local Mermaid rendering, mdviewer allows raw HTML from your markdown (via Goldmark's `WithUnsafe` option). This is intended for local workflows where you trust the content. Be cautious when rendering untrusted markdown, as it may include arbitrary HTML that headless Chrome will process.
+
 ```markdown
 ```mermaid
 graph TD

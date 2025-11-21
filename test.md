@@ -19,11 +19,22 @@ func main() {
 
 ### Mermaid Diagram
 
+
 ```mermaid
 graph TD
     A[Start] --> B{Is it?}
     B -->|Yes| C[OK]
     B -->|No| D[End]
+```
+
+---
+
+
+```mermaid
+graph TD
+    A[Início] --> B{É isso?}
+    B -->|Sim| C[OK]
+    B -->|Não| D[Fim]
 ```
 
 ## Tables
