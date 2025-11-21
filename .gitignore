@@ -4,7 +4,7 @@
 *.dll
 *.so
 *.dylib
-mdviewer
+/mdviewer
 mdviewer-*
 
 # Test binary, built with `go test -c`
