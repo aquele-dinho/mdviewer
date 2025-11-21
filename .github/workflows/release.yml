@@ -66,6 +66,7 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           path: dist
+          merge-multiple: true
 
       - name: Package archives
         run: |
@@ -82,7 +83,8 @@ jobs:
       - name: Create checksums
         run: |
           cd dist
-          sha256sum * > checksums.txt
+          # Only hash the packaged archives (skip directories and raw binaries)
+          sha256sum *.tar.gz *.zip > checksums.txt
           cat checksums.txt
 
       - name: Create Release

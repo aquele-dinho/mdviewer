@@ -17,7 +17,8 @@ A beautiful, cross-platform terminal markdown viewer with Mermaid diagram suppor
 
 ### Prebuilt binaries (recommended)
 
-Prebuilt binaries are published on the **GitHub Releases** page for this repository.
+You can download ready-to-use binaries from the **GitHub Releases** page:
+- https://github.com/aquele-dinho/mdviewer/releases
 
 - Binaries are built automatically by GitHub Actions for each tag starting with `v` (for example: `v1.0.0`).
 - Supported platforms:
@@ -33,10 +34,10 @@ Prebuilt binaries are published on the **GitHub Releases** page for this reposit
 - Each release also includes a `checksums.txt` file with SHA-256 hashes for all archives and binaries.
 
 To download and install:
-1. Go to the repository's **Releases** page.
+1. Open the **Releases** page: https://github.com/aquele-dinho/mdviewer/releases
 2. Pick the desired version (tag `vX.Y.Z`).
 3. Download the archive matching your OS/architecture.
-4. Verify the SHA-256 checksum using `checksums.txt` (optional but recommended).
+4. (Optional) Verify the SHA-256 checksum using `checksums.txt`.
 5. Extract the archive:
    - macOS/Linux (`.tar.gz`): `tar -xzf mdviewer-<platform>.tar.gz`
    - Windows (`.zip`): use File Explorer or `Expand-Archive` in PowerShell.
