@@ -15,6 +15,34 @@ A beautiful, cross-platform terminal markdown viewer with Mermaid diagram suppor
 
 ## Installation
 
+### Prebuilt binaries (recommended)
+
+Prebuilt binaries are published on the **GitHub Releases** page for this repository.
+
+- Binaries are built automatically by GitHub Actions for each tag starting with `v` (for example: `v1.0.0`).
+- Supported platforms:
+  - macOS (Intel, Apple Silicon)
+  - Linux (AMD64, ARM64)
+  - Windows (AMD64)
+- Each release includes compressed archives:
+  - `mdviewer-darwin-amd64.tar.gz`
+  - `mdviewer-darwin-arm64.tar.gz`
+  - `mdviewer-linux-amd64.tar.gz`
+  - `mdviewer-linux-arm64.tar.gz`
+  - `mdviewer-windows-amd64.zip`
+- Each release also includes a `checksums.txt` file with SHA-256 hashes for all archives and binaries.
+
+To download and install:
+1. Go to the repository's **Releases** page.
+2. Pick the desired version (tag `vX.Y.Z`).
+3. Download the archive matching your OS/architecture.
+4. Verify the SHA-256 checksum using `checksums.txt` (optional but recommended).
+5. Extract the archive:
+   - macOS/Linux (`.tar.gz`): `tar -xzf mdviewer-<platform>.tar.gz`
+   - Windows (`.zip`): use File Explorer or `Expand-Archive` in PowerShell.
+6. On Unix-like systems, make the binary executable if needed: `chmod +x mdviewer-*`.
+7. Run `./mdviewer --help` or `./mdviewer --version` to verify it works.
+
 ### From Source
 
 ```bash
@@ -239,6 +267,24 @@ mdviewer/
 ```
 
 ## Development
+
+### Release process (maintainers)
+
+Releases are automated via GitHub Actions using the workflow in `.github/workflows/release.yml`.
+
+1. Ensure the default branch (usually `main`) is in the desired state.
+2. Create and push a version tag:
+   ```bash
+   git tag vX.Y.Z
+   git push origin vX.Y.Z
+   ```
+3. GitHub Actions will:
+   - Build `mdviewer` binaries for all supported platforms
+   - Generate `dist/checksums.txt` with SHA-256 hashes
+   - Create a GitHub Release for the tag and upload the binaries and checksums
+4. Share the Release page URL with users so they can download the binaries.
+
+The `mdviewer --version` output corresponds to the tag version (without the leading `v`).
 
 ### Prerequisites
 

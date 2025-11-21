@@ -11,6 +11,9 @@ import (
 	"github.com/spf13/cobra"
 )
 
+// version is set at build time via -ldflags. Default is "dev" for local builds.
+var version = "dev"
+
 var (
 	// Global flags
 	style            string
@@ -43,12 +46,14 @@ Examples:
   mdviewer file.md --style dark         # Use dark theme
   mdviewer file.md --export-pdf out.pdf # Export to PDF
 `,
-	Version: "0.1.0",
-	Args:    cobra.MaximumNArgs(1),
-	RunE:    runView,
+	Args: cobra.MaximumNArgs(1),
+	RunE: runView,
 }
 
 func init() {
+	// Wire version into Cobra (supports --version and in help output)
+	rootCmd.Version = version
+
 	// Add flags
 	rootCmd.Flags().StringVarP(&style, "style", "s", "clean", "Color style: clean (default), auto, dark, light, or path to custom style")
 	rootCmd.Flags().IntVarP(&width, "width", "w", 0, "Terminal width for word wrapping (0 = auto-detect)")

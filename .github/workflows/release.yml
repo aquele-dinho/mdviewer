@@ -9,9 +9,28 @@ permissions:
   contents: write
 
 jobs:
-  release:
-    name: Build and Release
+  build:
+    name: Build binaries
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        include:
+          - os: darwin
+            arch: amd64
+            filename: mdviewer-darwin-amd64
+          - os: darwin
+            arch: arm64
+            filename: mdviewer-darwin-arm64
+          - os: linux
+            arch: amd64
+            filename: mdviewer-linux-amd64
+          - os: linux
+            arch: arm64
+            filename: mdviewer-linux-arm64
+          - os: windows
+            arch: amd64
+            filename: mdviewer-windows-amd64.exe
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -25,23 +44,40 @@ jobs:
         id: version
         run: echo "VERSION=${GITHUB_REF#refs/tags/v}" >> $GITHUB_OUTPUT
 
-      - name: Build binaries
+      - name: Build
         run: |
           mkdir -p dist
-          # macOS Intel
-          GOOS=darwin GOARCH=amd64 go build -ldflags="-s -w" -o dist/mdviewer-darwin-amd64 ./cmd/mdviewer
-          
-          # macOS Apple Silicon
-          GOOS=darwin GOARCH=arm64 go build -ldflags="-s -w" -o dist/mdviewer-darwin-arm64 ./cmd/mdviewer
-          
-          # Linux AMD64
-          GOOS=linux GOARCH=amd64 go build -ldflags="-s -w" -o dist/mdviewer-linux-amd64 ./cmd/mdviewer
-          
-          # Linux ARM64
-          GOOS=linux GOARCH=arm64 go build -ldflags="-s -w" -o dist/mdviewer-linux-arm64 ./cmd/mdviewer
-          
-          # Windows AMD64
-          GOOS=windows GOARCH=amd64 go build -ldflags="-s -w" -o dist/mdviewer-windows-amd64.exe ./cmd/mdviewer
+          LDFLAGS="-s -w -X main.version=${{ steps.version.outputs.VERSION }}"
+
+          GOOS=${{ matrix.os }} GOARCH=${{ matrix.arch }} go build -ldflags="$LDFLAGS" -o dist/${{ matrix.filename }} ./cmd/mdviewer
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.filename }}
+          path: dist/${{ matrix.filename }}
+
+  release:
+    name: Create GitHub Release
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+      - name: Download artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: dist
+
+      - name: Package archives
+        run: |
+          cd dist
+          # Create tar.gz archives for Unix-like targets
+          tar -czf mdviewer-darwin-amd64.tar.gz mdviewer-darwin-amd64
+          tar -czf mdviewer-darwin-arm64.tar.gz mdviewer-darwin-arm64
+          tar -czf mdviewer-linux-amd64.tar.gz mdviewer-linux-amd64
+          tar -czf mdviewer-linux-arm64.tar.gz mdviewer-linux-arm64
+
+          # Create zip archive for Windows target
+          zip mdviewer-windows-amd64.zip mdviewer-windows-amd64.exe
 
       - name: Create checksums
         run: |
@@ -53,11 +89,11 @@ jobs:
         uses: softprops/action-gh-release@v1
         with:
           files: |
-            dist/mdviewer-darwin-amd64
-            dist/mdviewer-darwin-arm64
-            dist/mdviewer-linux-amd64
-            dist/mdviewer-linux-arm64
-            dist/mdviewer-windows-amd64.exe
+            dist/mdviewer-darwin-amd64.tar.gz
+            dist/mdviewer-darwin-arm64.tar.gz
+            dist/mdviewer-linux-amd64.tar.gz
+            dist/mdviewer-linux-arm64.tar.gz
+            dist/mdviewer-windows-amd64.zip
             dist/checksums.txt
           draft: false
           prerelease: false
@@ -65,7 +101,12 @@ jobs:
           body: |
             ## Installation
 
-            Download the binary for your platform and run it!
+            Download the binary for your platform from the assets below and run it.
+
+            **Supported Platforms:**
+            - macOS (Intel, Apple Silicon)
+            - Linux (AMD64, ARM64)
+            - Windows (AMD64)
 
             **Requirements:**
             - Chrome, Chromium, or Edge must be installed for local Mermaid diagram rendering
@@ -80,4 +121,4 @@ jobs:
             ./mdviewer README.md
             ```
 
-            See README.md for full documentation.
+            For detailed usage, flags, and examples, see the README.md in this repository.
