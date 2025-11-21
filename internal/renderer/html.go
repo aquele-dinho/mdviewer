@@ -30,7 +30,9 @@ func NewHTMLRenderer() *HTMLRenderer {
 		goldmark.WithRendererOptions(
 			html.WithHardWraps(),
 			html.WithXHTML(),
-			html.WithUnsafe(), // Allow raw HTML (needed for embedded Mermaid SVGs)
+			// Allow raw HTML from markdown, including embedded Mermaid SVGs.
+			// This is intended for local markdown/PDF workflows; be cautious with untrusted input.
+			html.WithUnsafe(),
 		),
 	)
 
@@ -42,10 +44,7 @@ func NewHTMLRenderer() *HTMLRenderer {
 // RenderToHTML converts markdown content to HTML
 func (r *HTMLRenderer) RenderToHTML(markdown string) (string, error) {
 	// First, process mermaid diagrams and replace with rendered SVGs
-	processed, err := r.processMermaidDiagrams(markdown)
-	if err != nil {
-		return "", fmt.Errorf("failed to process mermaid diagrams: %w", err)
-	}
+	processed := r.processMermaidDiagrams(markdown)
 
 	var buf bytes.Buffer
 	
@@ -146,19 +145,22 @@ func (r *HTMLRenderer) wrapHTML(content string) string {
 	</html>`, content)
 }
 
-// processMermaidDiagrams detects mermaid code blocks and replaces them with rendered SVGs
-func (r *HTMLRenderer) processMermaidDiagrams(markdown string) (string, error) {
+// processMermaidDiagrams detects mermaid code blocks and replaces them with rendered SVGs.
+// On any failure (e.g., compiler creation or render errors), it falls back to the
+// original markdown so diagrams remain as code fences.
+func (r *HTMLRenderer) processMermaidDiagrams(markdown string) string {
 	// Detect mermaid blocks
 	mermaidBlocks := DetectMermaidBlocks(markdown)
 	if len(mermaidBlocks) == 0 {
-		return markdown, nil
+		return markdown
 	}
 
-	// Create mermaid compiler
+	// Create mermaid compiler. If this fails (for example, when headless Chrome
+	// is not available), we intentionally fall back to showing the original
+	// mermaid code blocks instead of failing the whole render.
 	compiler, err := mermaid.NewCompiler()
 	if err != nil {
-		// If compiler creation fails, return original markdown (mermaid will show as code blocks)
-		return markdown, nil
+		return markdown
 	}
 	defer compiler.Close()
 
@@ -187,5 +189,5 @@ func (r *HTMLRenderer) processMermaidDiagrams(markdown string) (string, error) {
 		result = pattern.ReplaceAllString(result, svgHTML)
 	}
 
-	return result, nil
+	return result
 }
