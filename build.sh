@@ -43,3 +43,4 @@ du -h "$OUTPUT_DIR"/*
 echo ""
 echo "Note: All binaries require Chrome/Chromium to be installed on target systems"
 echo "for local Mermaid diagram rendering. Without it, URL mode will be used as fallback."
+I
