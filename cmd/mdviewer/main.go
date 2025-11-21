@@ -13,13 +13,14 @@ import (
 
 var (
 	// Global flags
-	style         string
-	width         int
-	noMermaid     bool
-	openMermaid   bool
-	exportPDF     string
-	mermaidMode   string
-	mermaidOutDir string
+	style            string
+	width            int
+	noMermaid        bool
+	openMermaid      bool
+	exportPDF        string
+	mermaidMode      string
+	mermaidOutDir    string
+	keepMermaidFiles bool
 )
 
 func main() {
@@ -55,7 +56,8 @@ func init() {
 	rootCmd.Flags().BoolVar(&openMermaid, "open-mermaid", false, "Open mermaid diagrams in browser automatically")
 	rootCmd.Flags().StringVarP(&exportPDF, "export-pdf", "p", "", "Export to PDF file")
 	rootCmd.Flags().StringVar(&mermaidMode, "mermaid-mode", "terminal", "Mermaid rendering mode: terminal (default), svg, png, url")
-	rootCmd.Flags().StringVar(&mermaidOutDir, "mermaid-output-dir", ".", "Directory for exported SVG files (default: current directory)")
+	rootCmd.Flags().StringVar(&mermaidOutDir, "mermaid-output-dir", os.TempDir(), "Directory for exported diagram files (default: system temp directory)")
+	rootCmd.Flags().BoolVarP(&keepMermaidFiles, "keep-mermaid-files", "k", false, "Save Mermaid diagram files (SVG/PNG) to disk")
 }
 
 func runView(cmd *cobra.Command, args []string) error {
@@ -80,11 +82,12 @@ func runView(cmd *cobra.Command, args []string) error {
 
 	// Create renderer
 	rendererOpts := renderer.RenderOptions{
-		Style:       style,
-		Width:       width,
-		NoMermaid:   noMermaid,
-		MermaidMode: mermaidMode,
-		MermaidOutDir: mermaidOutDir,
+		Style:            style,
+		Width:            width,
+		NoMermaid:        noMermaid,
+		MermaidMode:      mermaidMode,
+		MermaidOutDir:    mermaidOutDir,
+		KeepMermaidFiles: keepMermaidFiles,
 	}
 
 	mdRenderer, err := renderer.NewRenderer(rendererOpts)

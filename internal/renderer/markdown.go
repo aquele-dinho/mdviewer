@@ -9,11 +9,12 @@ import (
 
 // RenderOptions contains configuration for rendering markdown
 type RenderOptions struct {
-	Style         string // Style name: "dark", "light", "auto"
-	Width         int    // Terminal width for wrapping
-	NoMermaid     bool   // Skip mermaid diagram detection
-	MermaidMode   string // Mermaid rendering mode: "terminal", "svg", "url"
-	MermaidOutDir string // Output directory for SVG files
+	Style            string // Style name: "dark", "light", "auto"
+	Width            int    // Terminal width for wrapping
+	NoMermaid        bool   // Skip mermaid diagram detection
+	MermaidMode      string // Mermaid rendering mode: "terminal", "svg", "url"
+	MermaidOutDir    string // Output directory for SVG files
+	KeepMermaidFiles bool   // Save mermaid diagram files to disk
 }
 
 // Renderer handles markdown rendering

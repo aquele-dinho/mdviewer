@@ -130,13 +130,15 @@ func (v *SimpleViewer) renderMermaidDiagrams(content []byte) error {
 				fmt.Print("\n" + preview)
 			}
 			
-			// Save to file
-			filename := fmt.Sprintf("diagram-%d.svg", i+1)
-			outputPath := filepath.Join(opts.MermaidOutDir, filename)
-			if err := mermaid.SaveSVGToFile(result.SVG, outputPath); err != nil {
-				fmt.Fprintf(os.Stderr, "Warning: failed to save SVG: %v\n", err)
-			} else {
-				fmt.Printf("  💾 Saved to: %s\n\n", outputPath)
+			// Save to file only if --keep-mermaid-files is set
+			if opts.KeepMermaidFiles {
+				filename := fmt.Sprintf("diagram-%d.svg", i+1)
+				outputPath := filepath.Join(opts.MermaidOutDir, filename)
+				if err := mermaid.SaveSVGToFile(result.SVG, outputPath); err != nil {
+					fmt.Fprintf(os.Stderr, "Warning: failed to save SVG: %v\n", err)
+				} else {
+					fmt.Printf("  💾 Saved to: %s\n\n", outputPath)
+				}
 			}
 			
 		case "svg":
