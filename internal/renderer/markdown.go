@@ -63,8 +63,17 @@ func NewRenderer(opts RenderOptions) (*Renderer, error) {
 	}, nil
 }
 
+// PreprocessLinks exposes the link preprocessing function
+func (r *Renderer) PreprocessLinks(content string) string {
+	return PreprocessLinks(content)
+}
+
 // Render renders markdown content to ANSI-styled terminal output
 func (r *Renderer) Render(content string) (string, error) {
+	// First preprocess links (Markdown + Obsidian-style) so Glamour can
+	// render them as normal links/images.
+	content = PreprocessLinks(content)
+
 	// Check for mermaid diagrams if enabled
 	if !r.options.NoMermaid {
 		content = r.processMermaid(content)

@@ -58,10 +58,12 @@ graph TD
 - Obsidian Syntax
 [[test]]
 
+- Obsidian image view
+![[./diagram-1.png]]
 
+- Obsidian image view with size (width: 400px)
 ![[./diagram-1.png|400]]
 
-![[./diagram-1.png]]
 
 ---
 

@@ -7,6 +7,9 @@ A beautiful, cross-platform terminal markdown viewer with Mermaid diagram suppor
 - ✨ **Beautiful ANSI rendering** - Styled markdown output in your terminal
 - 🎨 **Multiple themes** - Auto-detect, dark, light, or custom styles
 - 📊 **Local Mermaid rendering** - Renders diagrams locally using chromedp (no internet required!)
+- 🖼️ **Inline image display** - Shows images directly in supported terminals (Warp, iTerm2, Kitty, etc.)
+- 📐 **Image resizing** - Supports Obsidian-style image sizing (`![[image.png|400]]`)
+- 🔗 **Obsidian compatibility** - Supports wiki-links (`[[page]]`) and image embeds (`![[image.png]]`)
 - 📏 **Smart word wrapping** - Auto-detects terminal width
 - 🚀 **Fast and lightweight** - Single binary with embedded mermaid.js
 - 🔄 **Stdin support** - Pipe markdown content directly
@@ -158,9 +161,10 @@ mdviewer --version
 - Tables
 - Blockquotes
 - Code blocks with syntax highlighting
-- Links
+- Links (standard markdown and Obsidian wiki-links)
+- **Images** with inline display and resizing support
 - Horizontal rules
-- Mermaid diagrams (visual indicators)
+- Mermaid diagrams (rendered inline or exported)
 
 ## Mermaid Diagram Support
 
@@ -251,6 +255,62 @@ mdviewer doc.md --mermaid-mode=url
 - Pie Charts
 - Git Graphs
 - User Journey Maps
+
+## Inline Image Support
+
+mdviewer displays images directly in supported terminals using inline image protocols:
+
+### Standard Markdown Syntax
+```markdown
+![Alt text](./path/to/image.png)
+```
+
+### Obsidian-Style Syntax
+mdviewer supports Obsidian's wiki-style image embeds with optional sizing:
+
+```markdown
+# Basic embed
+![[image.png]]
+
+# With width specification (resizes to 400px width, maintains aspect ratio)
+![[image.png|400]]
+
+# Wiki-links for pages
+[[other-page]]          # Converts to: [other-page](./other-page.md)
+[[page|Custom Label]]   # Converts to: [Custom Label](./page.md)
+```
+
+### Supported Image Formats
+- PNG (`.png`)
+- JPEG (`.jpg`, `.jpeg`)
+- GIF (`.gif`)
+- WebP (`.webp`)
+
+### Image Display Behavior
+
+**Terminals with inline image support:**
+- Images display directly in the terminal output
+- Automatic resizing if width specified
+- Maintains aspect ratio
+
+**Terminals without inline image support:**
+- Falls back to text representation (e.g., "Image: filename.png")
+- File path shown for reference
+
+**Image Resolution:**
+- Relative paths (e.g., `./images/photo.png`) are resolved from the markdown file's directory
+- Absolute paths work as-is
+- HTTP/HTTPS URLs are not displayed inline (shown as text links)
+
+### Examples
+
+```bash
+# View markdown with images
+mdviewer document.md
+
+# Images will display inline in Warp, iTerm2, Kitty, etc.
+# Other terminals will show text placeholders
+```
 
 ## Configuration
 
@@ -350,10 +410,12 @@ go test ./...
 - [x] Stdin support
 - [x] PDF export with chromedp
 - [x] SVG export for diagrams
+- [x] **Terminal inline image support** (iTerm2, Kitty, Warp, etc.)
+- [x] **Obsidian-style syntax support** (wiki-links, image embeds, sizing)
+- [x] **Image resizing** with aspect ratio preservation
 - [ ] Interactive TUI mode with Bubbletea
 - [ ] Search functionality
 - [ ] Link navigation
-- [ ] Terminal inline image support (iTerm2, Kitty)
 - [ ] Watch mode for live updates
 - [ ] Custom style editor
 
