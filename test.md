@@ -49,4 +49,20 @@ graph TD
 
 ---
 
+## Links
+
+- Default Syntax
+[Label](./test.md)
+
+
+- Obsidian Syntax
+[[test]]
+
+
+![[./diagram-1.png|400]]
+
+![[./diagram-1.png]]
+
+---
+
 That's all for now!
