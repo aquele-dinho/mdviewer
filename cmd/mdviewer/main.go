@@ -102,7 +102,7 @@ func runView(cmd *cobra.Command, args []string) error {
 
 	// Handle PDF export
 	if exportPDF != "" {
-		return exportToPDF(inputPath, exportPDF, mdRenderer)
+		return exportToPDF(inputPath, exportPDF)
 	}
 
 	// Handle mermaid diagram opening if requested
@@ -112,17 +112,17 @@ func runView(cmd *cobra.Command, args []string) error {
 		if err != nil {
 			return fmt.Errorf("failed to read file for mermaid detection: %w", err)
 		}
-		
+
 		// Detect mermaid blocks
 		mermaidBlocks := renderer.DetectMermaidBlocks(string(content))
-		
+
 		if len(mermaidBlocks) > 0 {
 			fmt.Fprintf(os.Stderr, "Opening %d mermaid diagram(s) in browser...\n", len(mermaidBlocks))
-			
+
 			for i, block := range mermaidBlocks {
 				url := renderer.GenerateMermaidLiveURL(block)
 				fmt.Fprintf(os.Stderr, "  %d. %s: %s\n", i+1, block.Type, url)
-				
+
 				if err := utils.OpenURL(url); err != nil {
 					fmt.Fprintf(os.Stderr, "     Warning: failed to open URL: %v\n", err)
 				}
@@ -141,7 +141,7 @@ func runView(cmd *cobra.Command, args []string) error {
 	return simpleViewer.ViewFile(inputPath)
 }
 
-func exportToPDF(inputPath, outputPath string, r *renderer.Renderer) error {
+func exportToPDF(inputPath, outputPath string) error {
 	// Create PDF exporter
 	exporter := pdf.NewExporter()
 
