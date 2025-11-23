@@ -61,8 +61,8 @@ graph TD
 - Obsidian image view
 ![[./diagram-1.png]]
 
-- Obsidian image view with size (width: 400px)
-![[./diagram-1.png|400]]
+- Obsidian image view with size (width: 600px)
+![[./diagram-1.png|600]]
 
 
 ---

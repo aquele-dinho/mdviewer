@@ -24,8 +24,8 @@ func ResizeImage(imageData []byte, targetWidth int) ([]byte, error) {
 	origWidth := bounds.Dx()
 	origHeight := bounds.Dy()
 
-	// If already smaller than target, return original
-	if origWidth <= targetWidth {
+	// If already at target width, return original
+	if origWidth == targetWidth {
 		return imageData, nil
 	}
 
@@ -45,8 +45,9 @@ func ResizeImage(imageData []byte, targetWidth int) ([]byte, error) {
 		return nil, fmt.Errorf("failed to encode resized image: %w", err)
 	}
 
-	// If resizing resulted in larger file, return original
-	if buf.Len() > len(imageData) && format == "png" {
+	// Only return original if downscaling resulted in larger file (shouldn't happen)
+	// Allow upscaling even if file size increases
+	if origWidth > targetWidth && buf.Len() > len(imageData) && format == "png" {
 		return imageData, nil
 	}
 
