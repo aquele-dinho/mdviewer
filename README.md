@@ -418,6 +418,7 @@ go test ./...
 - [ ] Link navigation
 - [ ] Watch mode for live updates
 - [ ] Custom style editor
+- [ ] Neovim plugin for in-editor markdown preview
 
 ## Technologies
 
