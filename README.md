@@ -4,17 +4,31 @@ A beautiful, cross-platform terminal markdown viewer with Mermaid diagram suppor
 
 ## Features
 
-- ✨ **Beautiful ANSI rendering** - Styled markdown output in your terminal
-- 🎨 **Multiple themes** - Auto-detect, dark, light, or custom styles
+### Core Rendering
+- ✨ **Beautiful ANSI rendering** - Styled markdown output in your terminal with syntax highlighting
+- 🎨 **Multiple themes** - Auto-detect, dark, light, or custom styles (including clean style without hash prefixes)
+- 📏 **Smart word wrapping** - Auto-detects terminal width for optimal display
+- 🚀 **Fast and lightweight** - Single binary with embedded dependencies
+
+### Images & Diagrams
 - 📊 **Local Mermaid rendering** - Renders diagrams locally using chromedp (no internet required!)
-- 🖼️ **Inline image display** - Shows images directly in supported terminals (Warp, iTerm2, Kitty, etc.)
-- 📐 **Image resizing** - Supports Obsidian-style image sizing (`![[image.png|400]]`)
-- 🔗 **Obsidian compatibility** - Supports wiki-links (`[[page]]`) and image embeds (`![[image.png]]`)
-- 📏 **Smart word wrapping** - Auto-detects terminal width
-- 🚀 **Fast and lightweight** - Single binary with embedded mermaid.js
-- 🔄 **Stdin support** - Pipe markdown content directly
-- 🖨️ **PDF export** - Export markdown with rendered diagrams to PDF
-- 🪟 **Cross-platform** - Works on macOS, Linux, and Windows
+- 🖼️ **Inline image display** - Shows images directly in supported terminals (Warp, iTerm2, Kitty, Windows Terminal, VSCode, WezTerm)
+- 📐 **Smart image resizing** - Bilinear interpolation with aspect ratio preservation
+- 🎯 **Multiple rendering modes** - Terminal, SVG export, PNG export, or URL fallback for diagrams
+- 💾 **Memory-efficient** - Terminal mode works in-memory by default; save to disk only when needed
+
+### Obsidian Integration
+- 🔗 **Wiki-link support** - Converts `[[page]]` and `[[page|label]]` to standard markdown links
+- 🖼️ **Image embeds** - Supports `![[image.png]]` syntax with automatic path resolution
+- 📏 **Sizing syntax** - `![[image.png|400]]` resizes images to specified width
+- 📁 **Smart path resolution** - Relative paths resolved from markdown file directory
+
+### Advanced Features
+- 🔄 **Stdin support** - Pipe markdown content from any source
+- 🖨️ **PDF export** - Export markdown with fully rendered diagrams and images to PDF
+- 🪟 **Cross-platform** - Works seamlessly on macOS, Linux, and Windows
+- 🎭 **Protocol auto-detection** - Automatically detects and uses appropriate terminal image protocols
+- 📝 **Neovim integration** - Full-featured plugin for in-editor live preview (`contrib/neovim/mdviewer.nvim`)
 
 ## Installation
 
@@ -258,49 +272,80 @@ mdviewer doc.md --mermaid-mode=url
 
 ## Inline Image Support
 
-mdviewer displays images directly in supported terminals using inline image protocols:
+mdviewer displays images directly in supported terminals using inline image protocols with advanced rendering capabilities.
 
 ### Standard Markdown Syntax
 ```markdown
 ![Alt text](./path/to/image.png)
+![Description](../images/photo.jpg)
 ```
 
 ### Obsidian-Style Syntax
-mdviewer supports Obsidian's wiki-style image embeds with optional sizing:
+Full support for Obsidian's wiki-style syntax with intelligent preprocessing:
 
 ```markdown
-# Basic embed
+# Basic image embed
 ![[image.png]]
 
 # With width specification (resizes to 400px width, maintains aspect ratio)
 ![[image.png|400]]
+![[photo.jpg|800]]  # Supports upscaling with bilinear interpolation
 
 # Wiki-links for pages
 [[other-page]]          # Converts to: [other-page](./other-page.md)
 [[page|Custom Label]]   # Converts to: [Custom Label](./page.md)
+[[docs/setup]]          # Converts to: [docs/setup](./docs/setup.md)
 ```
 
+### How It Works
+1. **Preprocessing**: Obsidian syntax is converted to standard markdown before rendering
+2. **Content Detection**: Unified block detection identifies all images and mermaid diagrams
+3. **Segmented Rendering**: Content is rendered in document order, maintaining structure
+4. **Smart Resizing**: Width specifications trigger bilinear interpolation for high-quality scaling
+
 ### Supported Image Formats
-- PNG (`.png`)
-- JPEG (`.jpg`, `.jpeg`)
-- GIF (`.gif`)
-- WebP (`.webp`)
+- **PNG** (`.png`) - Preferred for lossless quality after resizing
+- **JPEG** (`.jpg`, `.jpeg`) - Automatically converted to PNG when resized
+- **GIF** (`.gif`) - Static GIF support
+- **WebP** (`.webp`) - Modern format support
 
 ### Image Display Behavior
 
 **Terminals with inline image support:**
-- Images display directly in the terminal output
-- Automatic resizing if width specified
-- Maintains aspect ratio
+- ✅ Images display directly in terminal output using appropriate protocol (iTerm2, Kitty, Sixel)
+- ✅ Automatic bilinear interpolation resizing when width specified
+- ✅ Aspect ratio always maintained
+- ✅ Supports both downscaling and upscaling
+- ✅ Images and Mermaid diagrams render in document order
 
 **Terminals without inline image support:**
-- Falls back to text representation (e.g., "Image: filename.png")
-- File path shown for reference
+- ℹ️ Falls back to descriptive text representation
+- ℹ️ Shows file path for reference
+- ℹ️ Indicates image format and alt text
 
-**Image Resolution:**
-- Relative paths (e.g., `./images/photo.png`) are resolved from the markdown file's directory
-- Absolute paths work as-is
-- HTTP/HTTPS URLs are not displayed inline (shown as text links)
+**Path Resolution:**
+- ✅ **Relative paths** (e.g., `./images/photo.png`) are resolved from the markdown file's directory
+- ✅ **Absolute paths** work as-is
+- ✅ **Obsidian-style** bare paths (e.g., `![[photo.png]]`) are normalized to relative paths
+- ❌ **HTTP/HTTPS URLs** are not displayed inline (shown as text links only)
+
+### Image Resizing Technical Details
+
+**Resize Algorithm:**
+- Uses `golang.org/x/image/draw` with bilinear interpolation
+- High-quality scaling in both directions (up and down)
+- Maintains aspect ratio automatically
+
+**Performance:**
+- Original image cached in memory during resize
+- Resized images encoded to PNG for lossless quality
+- Only processes images when width specification is present
+
+**Example:**
+```markdown
+![[large-image.png|400]]  # Original: 2000x1500px → Resized: 400x300px
+![[small-icon.png|200]]   # Original: 50x50px → Upscaled: 200x200px
+```
 
 ### Examples
 
@@ -311,6 +356,53 @@ mdviewer document.md
 # Images will display inline in Warp, iTerm2, Kitty, etc.
 # Other terminals will show text placeholders
 ```
+
+## Neovim Plugin
+
+mdviewer includes a full-featured Neovim plugin for in-editor markdown preview. Preview your markdown files in a split or floating terminal window with live auto-refresh.
+
+### Features
+- ✅ **Live preview** - Auto-refreshes as you edit (configurable debounce)
+- ✅ **Flexible layout** - Vertical split, horizontal split, or floating window
+- ✅ **Full mdviewer support** - All features including Mermaid diagrams and inline images
+- ✅ **Path resolution** - Relative paths work correctly (preview runs in file's directory)
+- ✅ **Easy setup** - Works with lazy.nvim, packer, or native packages
+
+### Quick Start
+
+1. **Install the plugin** (using lazy.nvim):
+```lua
+{
+  dir = '/path/to/mdviewer/contrib/neovim/mdviewer.nvim',
+  ft = 'markdown',
+  opts = {
+    style = 'clean',
+    window_type = 'vsplit',  -- 'vsplit' | 'hsplit' | 'float'
+    auto_refresh = true,
+    mermaid_mode = 'terminal',
+  },
+}
+```
+
+2. **Use in Neovim**:
+```vim
+:MDViewerToggle  " Toggle preview on/off
+:MDViewerRefresh " Force refresh
+:MDViewerClose   " Close preview
+```
+
+3. **Optional keymap**:
+```lua
+vim.keymap.set('n', '<leader>mp', '<cmd>MDViewerToggle<cr>', 
+  { desc = 'mdviewer: toggle preview' })
+```
+
+### Full Documentation
+
+See the complete installation and configuration guide:
+- **Plugin README**: `contrib/neovim/mdviewer.nvim/README.md`
+- Includes setup for lazy.nvim, packer, and native packages
+- Configuration options for styling, window type, auto-refresh, etc.
 
 ## Configuration
 
@@ -349,20 +441,74 @@ mdviewer document.md --style /path/to/custom-style.json
 ```
 mdviewer/
 ├── cmd/
-│   └── mdviewer/           # CLI entry point
+│   └── mdviewer/           # CLI entry point (Cobra-based)
+│       └── main.go         # Command-line interface and flags
 ├── internal/
 │   ├── mermaid/            # Local Mermaid compiler (chromedp)
 │   │   ├── assets/         # Embedded mermaid.min.js
 │   │   ├── compiler.go     # Chromedp-based renderer
-│   │   ├── svg.go          # SVG utilities
+│   │   ├── svg.go          # SVG utilities and dimension extraction
 │   │   └── embed.go        # go:embed for mermaid.js
-│   ├── renderer/           # Markdown rendering
-│   ├── viewer/             # Display logic
+│   ├── renderer/           # Markdown rendering engine
+│   │   ├── markdown.go     # Main ANSI renderer (Glamour)
+│   │   ├── html.go         # HTML renderer (Goldmark, for PDF)
+│   │   ├── mermaid.go      # Mermaid block detection
+│   │   ├── images.go       # Image block detection
+│   │   ├── blocks.go       # Unified content block management
+│   │   ├── links.go        # Obsidian wiki-link preprocessing
+│   │   └── styles.go       # Custom style definitions
+│   ├── viewer/             # Display logic and segmented rendering
+│   │   └── simple.go       # Terminal viewer with inline image support
 │   ├── pdf/                # PDF export with chromedp
-│   └── utils/              # File and terminal utilities
-├── go.mod
-└── README.md
+│   │   ├── exporter.go     # High-level export interface
+│   │   └── chromedp.go     # Low-level PDF generation
+│   └── utils/              # Utilities and helpers
+│       ├── terminal.go     # Terminal width detection
+│       ├── termimg.go      # Inline image protocol support
+│       ├── resize.go       # Image resizing with bilinear interpolation
+│       ├── file.go         # File I/O utilities
+│       └── browser.go      # Browser launch utilities
+├── .github/
+│   └── workflows/
+│       └── release.yml     # Automated multi-platform builds
+├── go.mod                  # Go module dependencies
+├── go.sum                  # Dependency checksums
+├── build.sh                # Local build script
+├── CHANGELOG.md            # Version history
+├── WARP.md                 # Development guide for AI assistants
+└── README.md               # This file
 ```
+
+### Architecture Overview
+
+**Content Processing Pipeline:**
+```
+1. Input (file/stdin)
+   ↓
+2. Obsidian Link Preprocessing (links.go)
+   - Converts [[page]] → [page](./page.md)
+   - Converts ![[image.png|400]] → ![image|width=400](./image.png)
+   ↓
+3. Content Block Detection (blocks.go)
+   - Detects all Mermaid diagrams (mermaid.go)
+   - Detects all images (images.go)
+   - Sorts by document order
+   ↓
+4. Segmented Rendering (viewer/simple.go)
+   - Renders markdown segments between special blocks
+   - Processes Mermaid diagrams (via mermaid/compiler.go)
+   - Processes images with resizing (via utils/resize.go)
+   - Displays inline or exports to files
+   ↓
+5. Output (terminal or PDF)
+```
+
+**Key Design Decisions:**
+- **Fresh chromedp contexts**: Each Mermaid render creates a new context to prevent memory leaks
+- **Memory-first approach**: Terminal mode works entirely in-memory unless `--keep-mermaid-files` is used
+- **Unified block detection**: Single pass identifies all special content (images + mermaid) for ordered rendering
+- **Preprocessing before detection**: Obsidian syntax converted early to simplify downstream processing
+- **Bilinear interpolation**: High-quality image scaling using `golang.org/x/image/draw`
 
 ## Development
 
@@ -402,30 +548,105 @@ go test ./...
 
 ## Roadmap
 
-- [x] Basic markdown rendering
-- [x] Mermaid diagram detection
-- [x] **Local Mermaid rendering** (chromedp)
-- [x] Multiple color themes
-- [x] Terminal width auto-detection
-- [x] Stdin support
-- [x] PDF export with chromedp
-- [x] SVG export for diagrams
-- [x] **Terminal inline image support** (iTerm2, Kitty, Warp, etc.)
-- [x] **Obsidian-style syntax support** (wiki-links, image embeds, sizing)
-- [x] **Image resizing** with aspect ratio preservation
-- [ ] Interactive TUI mode with Bubbletea
-- [ ] Search functionality
-- [ ] Link navigation
-- [ ] Watch mode for live updates
-- [ ] Custom style editor
-- [ ] Neovim plugin for in-editor markdown preview
+### Completed ✅
+- [x] **Core Rendering**
+  - [x] Basic markdown rendering with Glamour
+  - [x] Multiple color themes (auto, dark, light, clean)
+  - [x] Terminal width auto-detection
+  - [x] Stdin support for piping
+  
+- [x] **Mermaid Diagrams**
+  - [x] Mermaid diagram detection
+  - [x] Local Mermaid rendering (chromedp)
+  - [x] Multiple rendering modes (terminal, SVG, PNG, URL)
+  - [x] Memory-efficient terminal mode
+  - [x] Optional disk export with `--keep-mermaid-files`
+  
+- [x] **Images**
+  - [x] Terminal inline image support (iTerm2, Kitty, Warp, Windows Terminal, VSCode, WezTerm)
+  - [x] Obsidian-style syntax support (wiki-links, image embeds)
+  - [x] Image resizing with bilinear interpolation
+  - [x] Aspect ratio preservation
+  - [x] Multiple format support (PNG, JPEG, GIF, WebP)
+  - [x] Smart path resolution
+  
+- [x] **Export**
+  - [x] PDF export with chromedp
+  - [x] SVG export for diagrams
+  - [x] PNG export for diagrams
+
+- [x] **Architecture**
+  - [x] Unified content block detection
+  - [x] Segmented rendering in document order
+  - [x] Obsidian link preprocessing
+  - [x] Cross-platform support (macOS, Linux, Windows)
+  - [x] Automated multi-platform builds via GitHub Actions
+
+- [x] **Editor Integration**
+  - [x] Neovim plugin for in-editor preview (`contrib/neovim/mdviewer.nvim`)
+
+### Planned 🎯
+- [ ] **Interactive Features**
+  - [ ] Interactive TUI mode with Bubbletea
+  - [ ] Search functionality
+  - [ ] Link navigation (follow links within documents)
+  - [ ] Keyboard shortcuts for common actions
+  
+- [ ] **Live Editing**
+  - [ ] Watch mode for live markdown updates
+  - [ ] Auto-reload on file changes
+  - [ ] Side-by-side preview mode
+  
+- [ ] **Customization**
+  - [ ] Custom style editor/creator
+  - [ ] Theme marketplace or gallery
+  - [ ] Configuration file support (`.mdviewerrc`)
+  - [ ] Backlinks support
+  - [ ] Tag navigation
+  - [ ] Graph view for linked notes
+  - [ ] Transclusion support
+  
+- [ ] **Performance & Optimization**
+  - [ ] Caching for rendered Mermaid diagrams
+  - [ ] Parallel rendering for multiple diagrams
+  - [ ] Incremental rendering for large documents
+
+### Under Consideration 💭
+- [ ] **Additional Editor Integrations**
+  - [ ] VSCode extension integration
+  - [ ] Emacs mode
+  - [ ] Vim plugin (classic Vim)
+- [ ] **Advanced Rendering**
+  - [ ] Math equation rendering (KaTeX/MathJax)
+  - [ ] Network diagram rendering (beyond Mermaid)
+  - [ ] Notebook format support (Jupyter, Observable)
+- [ ] **Export & Presentation**
+  - [ ] Presentation mode (slides from markdown)
+  - [ ] Export to more formats (DOCX, EPUB)
+- [ ] **Extensibility**
+  - [ ] Custom plugin system
+  - [ ] API for external integrations
 
 ## Technologies
 
-- [Glamour](https://github.com/charmbracelet/glamour) - Terminal markdown rendering
-- [Cobra](https://github.com/spf13/cobra) - CLI framework
-- [Goldmark](https://github.com/yuin/goldmark) - Markdown parser
-- [Chromedp](https://github.com/chromedp/chromedp) - PDF generation (planned)
+### Core Libraries
+- [Glamour](https://github.com/charmbracelet/glamour) - Terminal markdown rendering with ANSI styling
+- [Cobra](https://github.com/spf13/cobra) - CLI framework for command-line interface
+- [Goldmark](https://github.com/yuin/goldmark) - Markdown parser for HTML generation (PDF export)
+- [Chromedp](https://github.com/chromedp/chromedp) - Headless Chrome automation for Mermaid rendering and PDF export
+
+### Image Processing
+- [golang.org/x/image/draw](https://pkg.go.dev/golang.org/x/image/draw) - High-quality image scaling with bilinear interpolation
+- Standard library (`image`, `image/png`, `image/jpeg`, `image/gif`) - Image decoding and encoding
+
+### Terminal Protocols
+- **iTerm2 inline images protocol** - Base64-encoded images with escape sequences
+- **Kitty graphics protocol** - Terminal-native image display
+- **Sixel graphics** - Legacy but widely supported protocol
+
+### Build & Release
+- **GitHub Actions** - Automated multi-platform builds and releases
+- **Go build system** - Cross-compilation for macOS, Linux, and Windows
 
 ## Contributing
 
