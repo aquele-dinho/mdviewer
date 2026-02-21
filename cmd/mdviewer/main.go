@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/aquele_dinho/mdviewer/internal/pager"
 	"github.com/aquele_dinho/mdviewer/internal/pdf"
 	"github.com/aquele_dinho/mdviewer/internal/renderer"
 	"github.com/aquele_dinho/mdviewer/internal/utils"
@@ -24,6 +25,7 @@ var (
 	mermaidMode      string
 	mermaidOutDir    string
 	keepMermaidFiles bool
+	noPager          bool
 )
 
 func main() {
@@ -63,6 +65,7 @@ func init() {
 	rootCmd.Flags().StringVar(&mermaidMode, "mermaid-mode", "terminal", "Mermaid rendering mode: terminal (default), svg, png, url")
 	rootCmd.Flags().StringVar(&mermaidOutDir, "mermaid-output-dir", os.TempDir(), "Directory for exported diagram files (default: system temp directory)")
 	rootCmd.Flags().BoolVarP(&keepMermaidFiles, "keep-mermaid-files", "k", false, "Save Mermaid diagram files (SVG/PNG) to disk")
+	rootCmd.Flags().BoolVar(&noPager, "no-pager", false, "Disable pagination (write directly to stdout)")
 }
 
 func runView(cmd *cobra.Command, args []string) error {
@@ -131,8 +134,20 @@ func runView(cmd *cobra.Command, args []string) error {
 		}
 	}
 
+	// Determine effective pager state:
+	// Disabled when --no-pager, output is not a TTY, or reading from stdin.
+	usePager := !noPager && utils.IsTerminal() && inputPath != "-"
+
 	// Create viewer and display
 	simpleViewer := viewer.NewSimpleViewer(mdRenderer)
+
+	var pgr *pager.Pager
+	if usePager {
+		pgr = pager.New()
+		simpleViewer.SetOutput(pgr.Writer())
+		simpleViewer.SetPagerActive(true)
+		defer pgr.Close()
+	}
 
 	if inputPath == "-" {
 		return simpleViewer.ViewStdin()

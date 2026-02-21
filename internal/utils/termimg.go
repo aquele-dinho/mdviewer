@@ -3,6 +3,7 @@ package utils
 import (
 	"encoding/base64"
 	"fmt"
+	"io"
 	"os"
 )
 
@@ -52,49 +53,35 @@ func DetectImageProtocol() TerminalImageProtocol {
 
 // DisplayInlineImage displays an image inline using the terminal's supported protocol
 func DisplayInlineImage(imageData []byte, protocol TerminalImageProtocol) error {
+	return DisplayInlineImageTo(os.Stdout, imageData, protocol)
+}
+
+// DisplayInlineImageTo writes an inline image to the given writer using the terminal's supported protocol
+func DisplayInlineImageTo(w io.Writer, imageData []byte, protocol TerminalImageProtocol) error {
 	switch protocol {
 	case ProtocolITerm2:
-		return displayITerm2Image(imageData)
+		return writeITerm2Image(w, imageData)
 	case ProtocolKitty:
-		return displayKittyImage(imageData)
+		return writeKittyImage(w, imageData)
 	case ProtocolSixel:
-		return displaySixelImage(imageData)
+		return writeITerm2Image(w, imageData) // Sixel falls back to iTerm2
 	default:
 		return fmt.Errorf("inline images not supported in this terminal")
 	}
 }
 
-// displayITerm2Image displays an image using iTerm2's inline image protocol
-// Protocol: ESC ] 1337 ; File=inline=1:<base64> BEL
-func displayITerm2Image(imageData []byte) error {
+// writeITerm2Image writes an image using iTerm2's inline image protocol to the given writer
+func writeITerm2Image(w io.Writer, imageData []byte) error {
 	encoded := base64.StdEncoding.EncodeToString(imageData)
-	
-	// iTerm2 protocol: ESC ] 1337 ; File=inline=1:<base64> BEL
-	fmt.Printf("\033]1337;File=inline=1:%s\a\n", encoded)
-	
-	return nil
+	_, err := fmt.Fprintf(w, "\033]1337;File=inline=1:%s\a\n", encoded)
+	return err
 }
 
-// displayKittyImage displays an image using Kitty's graphics protocol
-// Simplified version - just transmit and display
-func displayKittyImage(imageData []byte) error {
+// writeKittyImage writes an image using Kitty's graphics protocol to the given writer
+func writeKittyImage(w io.Writer, imageData []byte) error {
 	encoded := base64.StdEncoding.EncodeToString(imageData)
-	
-	// Kitty protocol: ESC _G<control data>;base64_data ESC \
-	// a=T means transmit and display, f=100 means PNG format
-	fmt.Printf("\033_Ga=T,f=100;%s\033\\\n", encoded)
-	
-	return nil
-}
-
-// displaySixelImage displays an image using Sixel protocol
-// Note: This is a simplified implementation that outputs PNG as base64
-// A full implementation would convert to actual Sixel format
-func displaySixelImage(imageData []byte) error {
-	// For Sixel, we need to convert PNG to Sixel format
-	// This is complex, so for now we fall back to iTerm2 protocol
-	// which Windows Terminal also supports as of recent versions
-	return displayITerm2Image(imageData)
+	_, err := fmt.Fprintf(w, "\033_Ga=T,f=100;%s\033\\\n", encoded)
+	return err
 }
 
 // SupportsInlineImages returns true if the current terminal supports inline images

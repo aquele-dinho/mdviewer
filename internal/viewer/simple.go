@@ -2,6 +2,7 @@ package viewer
 
 import (
 	"fmt"
+	"io"
 	"os"
 	"path/filepath"
 	"strings"
@@ -11,18 +12,32 @@ import (
 	"github.com/aquele_dinho/mdviewer/internal/utils"
 )
 
-// SimpleViewer displays markdown content directly to stdout
+// SimpleViewer displays markdown content to a writer (stdout by default)
 type SimpleViewer struct {
-	renderer *renderer.Renderer
-	basePath string // Base directory for resolving relative image paths
+	renderer    *renderer.Renderer
+	basePath    string // Base directory for resolving relative image paths
+	output      io.Writer
+	pagerActive bool // When true, suppress inline images (pagers don't support image protocols)
 }
 
-// NewSimpleViewer creates a new simple viewer
+// NewSimpleViewer creates a new simple viewer that writes to stdout
 func NewSimpleViewer(r *renderer.Renderer) *SimpleViewer {
 	return &SimpleViewer{
 		renderer: r,
 		basePath: ".",
+		output:   os.Stdout,
 	}
+}
+
+// SetOutput sets the writer where rendered content is sent.
+func (v *SimpleViewer) SetOutput(w io.Writer) {
+	v.output = w
+}
+
+// SetPagerActive marks that output is going through an external pager.
+// Inline images are suppressed because pagers don't support terminal image protocols.
+func (v *SimpleViewer) SetPagerActive(active bool) {
+	v.pagerActive = active
 }
 
 // SetBasePath sets the base directory for resolving relative image paths
@@ -80,7 +95,7 @@ func (v *SimpleViewer) renderWithInlineContent(content []byte, opts renderer.Ren
 		if err != nil {
 			return fmt.Errorf("failed to render content: %w", err)
 		}
-		fmt.Print(rendered)
+		fmt.Fprint(v.output, rendered)
 		return nil
 	}
 
@@ -134,7 +149,7 @@ func (v *SimpleViewer) renderWithInlineContent(content []byte, opts renderer.Ren
 				if err != nil {
 					return fmt.Errorf("failed to render markdown segment: %w", err)
 				}
-				fmt.Print(rendered)
+				fmt.Fprint(v.output, rendered)
 			}
 		}
 
@@ -154,7 +169,7 @@ func (v *SimpleViewer) renderWithInlineContent(content []byte, opts renderer.Ren
 			if err != nil {
 				return fmt.Errorf("failed to render trailing markdown segment: %w", err)
 			}
-			fmt.Print(rendered)
+			fmt.Fprint(v.output, rendered)
 		}
 	}
 
@@ -189,7 +204,7 @@ func (v *SimpleViewer) renderSingleMermaidBlock(compiler *mermaid.Compiler, bloc
 	case "terminal":
 		// Terminal mode: either inline image or ASCII preview, with the code
 		// fence fully replaced by the visualization.
-		if utils.SupportsInlineImages() {
+		if utils.SupportsInlineImages() && !v.pagerActive {
 			// Render to PNG for inline display.
 			width := result.Width
 			height := result.Height
@@ -205,16 +220,16 @@ func (v *SimpleViewer) renderSingleMermaidBlock(compiler *mermaid.Compiler, bloc
 				return fmt.Errorf("failed to render PNG for inline display: %w", err)
 			}
 
-			fmt.Printf("📊 Mermaid Diagram (%s):\n", block.Type)
+			fmt.Fprintf(v.output, "📊 Mermaid Diagram (%s):\n", block.Type)
 			protocol := utils.DetectImageProtocol()
-			if err := utils.DisplayInlineImage(pngData, protocol); err != nil {
+			if err := utils.DisplayInlineImageTo(v.output, pngData, protocol); err != nil {
 				return fmt.Errorf("failed to display inline image: %w", err)
 			}
-			fmt.Println()
+			fmt.Fprintln(v.output)
 		} else {
 			// Fallback: ASCII preview box.
 			preview := mermaid.GenerateASCIIPreview(block.Type, result.Width, result.Height)
-			fmt.Print(preview)
+			fmt.Fprint(v.output, preview)
 		}
 
 		// Optionally save SVG when requested.
@@ -224,7 +239,7 @@ func (v *SimpleViewer) renderSingleMermaidBlock(compiler *mermaid.Compiler, bloc
 			if err := mermaid.SaveSVGToFile(result.SVG, outputPath); err != nil {
 				fmt.Fprintf(os.Stderr, "Warning: failed to save SVG: %v\n", err)
 			} else {
-				fmt.Printf("  💾 Saved to: %s\n", outputPath)
+				fmt.Fprintf(v.output, "  💾 Saved to: %s\n", outputPath)
 			}
 		}
 
@@ -237,11 +252,11 @@ func (v *SimpleViewer) renderSingleMermaidBlock(compiler *mermaid.Compiler, bloc
 		// Show the original mermaid fence followed by a clickable file path.
 		code := fmt.Sprintf("```mermaid\n%s\n```\n", strings.TrimSpace(block.Content))
 		if rendered, err := v.renderer.RenderBytes([]byte(code)); err == nil {
-			fmt.Print(rendered)
+			fmt.Fprint(v.output, rendered)
 		} else {
-			fmt.Print(code)
+			fmt.Fprint(v.output, code)
 		}
-		fmt.Printf("📁 Mermaid diagram %d %s\n", index+1, outputPath)
+		fmt.Fprintf(v.output, "📁 Mermaid diagram %d %s\n", index+1, outputPath)
 
 	case "png":
 		width := result.Width
@@ -265,11 +280,11 @@ func (v *SimpleViewer) renderSingleMermaidBlock(compiler *mermaid.Compiler, bloc
 		}
 		code := fmt.Sprintf("```mermaid\n%s\n```\n", strings.TrimSpace(block.Content))
 		if rendered, err := v.renderer.RenderBytes([]byte(code)); err == nil {
-			fmt.Print(rendered)
+			fmt.Fprint(v.output, rendered)
 		} else {
-			fmt.Print(code)
+			fmt.Fprint(v.output, code)
 		}
-		fmt.Printf("📁 Mermaid diagram %d %s\n", index+1, outputPath)
+		fmt.Fprintf(v.output, "📁 Mermaid diagram %d %s\n", index+1, outputPath)
 	}
 
 	return nil
@@ -278,14 +293,14 @@ func (v *SimpleViewer) renderSingleMermaidBlock(compiler *mermaid.Compiler, bloc
 // renderSingleImageBlock renders a single image block inline
 func (v *SimpleViewer) renderSingleImageBlock(block renderer.ImageBlock, index int) error {
 	// Check if terminal supports inline images
-	if !utils.SupportsInlineImages() {
-		// Fallback: let Glamour render the image as text
+	if !utils.SupportsInlineImages() || v.pagerActive {
+	// Fallback: let Glamour render the image as text
 		markdownImg := fmt.Sprintf("![%s](%s)", block.AltText, block.Path)
 		rendered, err := v.renderer.RenderBytes([]byte(markdownImg))
 		if err != nil {
 			return fmt.Errorf("failed to render image placeholder: %w", err)
 		}
-		fmt.Print(rendered)
+		fmt.Fprint(v.output, rendered)
 		return nil
 	}
 
@@ -298,13 +313,13 @@ func (v *SimpleViewer) renderSingleImageBlock(block renderer.ImageBlock, index i
 	// Load image file
 	imageData, err := os.ReadFile(imgPath)
 	if err != nil {
-		// File not found or error reading - fall back to text representation
+	// File not found or error reading - fall back to text representation
 		markdownImg := fmt.Sprintf("![%s](%s)", block.AltText, block.Path)
 		rendered, err := v.renderer.RenderBytes([]byte(markdownImg))
 		if err != nil {
 			return fmt.Errorf("failed to render image placeholder: %w", err)
 		}
-		fmt.Print(rendered)
+		fmt.Fprint(v.output, rendered)
 		return nil
 	}
 
@@ -321,16 +336,16 @@ func (v *SimpleViewer) renderSingleImageBlock(block renderer.ImageBlock, index i
 
 	// Display inline image
 	if block.AltText != "" {
-		fmt.Printf("🖼️  %s:\n", block.AltText)
+		fmt.Fprintf(v.output, "🖼️  %s:\n", block.AltText)
 	} else {
-		fmt.Printf("🖼️  Image:\n")
+		fmt.Fprintf(v.output, "🖼️  Image:\n")
 	}
 
 	protocol := utils.DetectImageProtocol()
-	if err := utils.DisplayInlineImage(imageData, protocol); err != nil {
+	if err := utils.DisplayInlineImageTo(v.output, imageData, protocol); err != nil {
 		return fmt.Errorf("failed to display inline image: %w", err)
 	}
-	fmt.Println()
+	fmt.Fprintln(v.output)
 
 	return nil
 }
